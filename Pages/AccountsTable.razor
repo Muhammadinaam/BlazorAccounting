@@ -1,0 +1,126 @@
+﻿@page "/accounts"
+@using BlazorAccounting.Data
+@inject NavigationManager NavigationManager
+@inject AccountService AccountService
+@inject ISnackbar Snackbar
+
+@attribute [Authorize]
+
+<PageTitle>Accounts</PageTitle>
+
+<MudGrid>
+    <MudItem xs="6">
+        <h1>Accounts</h1>
+    </MudItem>
+    <MudItem xs="6">
+        <MudButton Link="/account" StartIcon="@Icons.Material.Filled.AddCircle" Style="float: right;" Variant="Variant.Filled" Color="Color.Primary">
+            Add New
+        </MudButton>
+    </MudItem>
+</MudGrid>
+
+<MudTable
+    @ref="table"
+    ServerData="@(new Func<TableState, Task<TableData<Account>>>(ServerReload))"
+    Loading="loading"
+    Hover="true"
+    Breakpoint="Breakpoint.Sm">
+    <ToolBarContent>
+        <MudSpacer />
+        <MudTextField
+            T="string"
+            ValueChanged="@(s=>OnSearch(s))"
+            Placeholder="Search (press Enter to search)"
+            Adornment="Adornment.Start"
+            AdornmentIcon="@Icons.Material.Filled.Search"
+            IconSize="Size.Medium"
+            Class="mt-0">
+        </MudTextField>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>
+            <MudTableSortLabel SortLabel="code" T="Account">Code</MudTableSortLabel>
+        </MudTh>
+        <MudTh>
+            <MudTableSortLabel SortLabel="name" T="Account">Name</MudTableSortLabel>
+        </MudTh>
+        <MudTh>Type</MudTh>
+        <MudTh Style="width: 20%">Actions</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Code">@context.Code</MudTd>
+        <MudTd DataLabel="Name">@context.Name</MudTd>
+        <MudTd DataLabel="Type">@context.AccountType</MudTd>
+        <MudTd DataLabel="Actions">
+            <MudButton Link="@GetEditUrl(context)" StartIcon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" Color="Color.Default">
+                Edit
+            </MudButton>
+            <MudButton OnClick="@(e => Delete(context.Id))" StartIcon="@Icons.Material.Filled.Delete" Variant="Variant.Filled" Color="Color.Error">
+                Delete
+            </MudButton>
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText>
+            @(loading ? "Loading..." : "No matching records found")
+        </MudText>
+    </NoRecordsContent>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
+
+@code {
+    [Inject] private IDialogService DialogService { get; set; }
+
+    private IEnumerable<Account>? pagedData;
+    private MudTable<Account>? table;
+    private bool loading = false;
+
+    private int totalItems;
+    private string searchString = "";
+
+    private string GetEditUrl(Account account) {
+        return $"/account/{account.Id}";
+    }
+
+    private async void Delete(int id)
+    {
+        bool? result = await DialogService.ShowMessageBox(
+            "Warning", 
+            "Deleting can not be undone!", 
+            yesText:"Delete!", cancelText:"Cancel");
+
+        if (result == true)
+        {
+            await AccountService.DeleteAsync(id);
+            await table?.ReloadServerData();
+            Snackbar.Add("Deleted successfully", Severity.Warning);
+        }
+
+    }
+
+    private async Task<TableData<Account>> ServerReload(TableState state)
+    {
+        if (loading)
+        {
+            return new TableData<Account>() {TotalItems = 0, Items = new List<Account>()};
+        }
+        loading = true;
+        StateHasChanged();
+        var (count, data) = await AccountService.GetPaginatedAsync(
+            state.PageSize,
+            state.Page,
+            searchString,
+            state.SortLabel,
+            state.SortDirection);
+        loading = false;
+        return new TableData<Account>() {TotalItems = count, Items = data.ToArray()};
+    }
+
+    private async void OnSearch(string text)
+    {
+        searchString = text;
+        await table?.ReloadServerData();
+    }
+}

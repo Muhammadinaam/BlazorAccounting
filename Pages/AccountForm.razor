@@ -1,0 +1,64 @@
+﻿@page "/account/{id?}"
+@using BlazorAccounting.Data
+@using Microsoft.AspNetCore.Identity;
+@inject AccountService accountService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+@attribute [Authorize]
+
+<PageTitle>Account</PageTitle>
+
+<h1>Account</h1>
+
+<EditForm Model="@account" OnValidSubmit="@HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <MudTextField Label="Code" @bind-Value="account.Code" />
+    <MudTextField Label="Name" @bind-Value="account.Name" />
+    <MudSelect T="AccountType" Label="Account Type">
+        @foreach (AccountType accountType in Enum.GetValues(typeof(AccountType)))
+        {
+            <MudSelectItem T="AccountType" Value="@accountType" />
+        }
+    </MudSelect>
+
+    <MudButton Class="mt-2" ButtonType="ButtonType.Submit" StartIcon="@Icons.Material.Filled.Save" Variant="Variant.Filled" Color="Color.Primary">
+        Save
+    </MudButton>
+
+</EditForm>
+
+@code {
+
+    [Parameter]
+    public string id { get; set; }
+
+    private Account account = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!String.IsNullOrEmpty(id))
+        {
+            account = await accountService.GetByIDAsync( int.Parse(id) );
+        }
+    }
+
+    private async void HandleValidSubmit()
+    {
+        if (!String.IsNullOrEmpty(id))
+        {
+            accountService.Update(account);
+        }
+        else
+        {
+            await accountService.InsertAsync(account);
+        }
+
+        await accountService.SaveChangesAsync();
+
+        Snackbar.Add("Saved successfully", Severity.Success);
+        NavigationManager.NavigateTo("/accounts");
+    }
+}
