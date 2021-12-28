@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using BlazorAccounting.Utilities;
+using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
 
 namespace BlazorAccounting.Data
@@ -16,6 +17,7 @@ namespace BlazorAccounting.Data
         public int Id { get; set; }
 
         [Required]
+        [UniqueCode]
         public string Code { get; set; } = null!;
 
         [Required]
