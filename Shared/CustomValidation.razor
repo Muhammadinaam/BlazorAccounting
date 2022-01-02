@@ -1,0 +1,14 @@
+﻿@if (Errors != null && Errors.Length > 0)
+{
+    <ul class="validation-errors">
+        @foreach (var error in Errors)
+        {
+            <li>@error</li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter]
+    public string[]? Errors { get; set; }
+}

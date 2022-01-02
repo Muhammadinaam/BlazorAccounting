@@ -74,6 +74,11 @@ namespace BlazorAccounting.Data
             return context.SaveChangesAsync();
         }
 
+        public async Task<int> CountAsync()
+        {
+            return await context.Set<T>().CountAsync();
+        }
+
         protected virtual void Dispose(bool disposing)
         {
             if (!this.disposed)

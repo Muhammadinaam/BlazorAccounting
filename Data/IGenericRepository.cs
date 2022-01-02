@@ -18,5 +18,6 @@ namespace BlazorAccounting.Data
         ValueTask<EntityEntry<T>> InsertAsync(T t);
         Task<int> SaveChangesAsync();
         void Update(T t);
+        Task<int> CountAsync();
     }
 }

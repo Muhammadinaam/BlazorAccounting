@@ -19,7 +19,20 @@ namespace BlazorAccounting.Data
         {
             base.OnModelCreating(builder);
 
+
             builder.Entity<Account>().HasQueryFilter(a => a.UserId == GetUserId());
+            builder.Entity<Account>().HasIndex(a => new { a.UserId, a.Code }).IsUnique();
+
+            builder.Entity<Transaction>()
+                .HasQueryFilter(a => a.UserId == GetUserId())
+                .Navigation(t => t.TransactionLines).AutoInclude();
+            builder.Entity<Transaction>().HasIndex(t => new { t.UserId, t.VoucherNumber}).IsUnique();
+
+            builder.Entity<TransactionLine>()
+                .Navigation(tl => tl.Transaction).AutoInclude();
+
+            builder.Entity<TransactionLine>()
+                .Navigation(tl => tl.Account).AutoInclude();
         }
 
         public string? GetUserName()
@@ -33,5 +46,7 @@ namespace BlazorAccounting.Data
         }
 
         public DbSet<Account> Accounts { get; set; }
+        public DbSet<Transaction> Transactions { get; set; }
+        public DbSet<TransactionLine> TransactionLines { get; set; }
     }
 }

@@ -4,6 +4,8 @@
 @inject AccountService accountService
 @inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.EntityFrameworkCore
 
 @attribute [Authorize]
 
@@ -11,24 +13,27 @@
 
 <h1>Account</h1>
 
-<EditForm Model="@account" OnValidSubmit="@HandleValidSubmit">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+<MudPaper Class="pa-3">
+    <EditForm Model="@account" OnValidSubmit="@HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <CustomValidation Errors="@Errors" />
 
-    <MudTextField Label="Code" @bind-Value="account.Code" />
-    <MudTextField Label="Name" @bind-Value="account.Name" />
-    <MudSelect T="AccountType" Label="Account Type">
-        @foreach (AccountType accountType in Enum.GetValues(typeof(AccountType)))
-        {
-            <MudSelectItem T="AccountType" Value="@accountType" />
-        }
-    </MudSelect>
+        <MudTextField Label="Code" Validation="@(RequiredFieldValidation)" @bind-Value="account.Code" />
+        <MudTextField Label="Name" Validation="@(RequiredFieldValidation)" @bind-Value="account.Name" />
+        <MudSelect T="AccountType" Label="Account Type">
+            @foreach (AccountType accountType in Enum.GetValues(typeof(AccountType)))
+            {
+                <MudSelectItem T="AccountType" Value="@accountType" />
+            }
+        </MudSelect>
 
-    <MudButton Class="mt-2" ButtonType="ButtonType.Submit" StartIcon="@Icons.Material.Filled.Save" Variant="Variant.Filled" Color="Color.Primary">
-        Save
-    </MudButton>
+        <MudButton Class="mt-2" ButtonType="ButtonType.Submit" StartIcon="@Icons.Material.Filled.Save" Variant="Variant.Filled" Color="Color.Primary">
+            Save
+        </MudButton>
 
-</EditForm>
+    </EditForm>
+</MudPaper>
 
 @code {
 
@@ -36,6 +41,8 @@
     public string id { get; set; }
 
     private Account account = new();
+    private RequiredAttribute RequiredFieldValidation = new RequiredAttribute() { ErrorMessage = "This field is required" };
+    private string[]? Errors { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -47,6 +54,7 @@
 
     private async void HandleValidSubmit()
     {
+        Errors = null;
         if (!String.IsNullOrEmpty(id))
         {
             accountService.Update(account);
@@ -56,9 +64,29 @@
             await accountService.InsertAsync(account);
         }
 
-        await accountService.SaveChangesAsync();
-
-        Snackbar.Add("Saved successfully", Severity.Success);
-        NavigationManager.NavigateTo("/accounts");
+        try
+        {
+            await accountService.SaveChangesAsync();
+            Snackbar.Add("Saved successfully", Severity.Success);
+            NavigationManager.NavigateTo("/accounts");
+        }
+        catch (DbUpdateException ex)
+        {
+            if (ex.InnerException.Message.Contains("duplicate"))
+            {
+                Errors = new string[] { "Code is already taken." };
+                StateHasChanged();
+            }
+            else
+            {
+                Errors = new string[] { "Data validation failed" };
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex )
+        {
+            Errors = new string[] { "Server error occurred. Please contact support" };
+            StateHasChanged();
+        }
     }
 }

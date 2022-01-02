@@ -1,0 +1,87 @@
+﻿@page "/ledger"
+
+@using BlazorAccounting.Data
+@inject TransactionService TransactionService
+@inject AccountService AccountService
+
+@attribute [Authorize]
+
+<PageTitle>Ledger</PageTitle>
+
+<h1>Ledger</h1>
+
+<MudPaper Class="pa-3">
+    <MudSelect Class="mb-3" Label="Change Account to see the ledger report" @bind-Value="Account" >
+        @if (Accounts != null && Accounts.Count > 0)
+        {
+            @foreach (Account account in Accounts)
+            {
+                <MudSelectItem Value="@account">@account.Name</MudSelectItem>
+            }
+        }
+    </MudSelect>
+    
+    <MudSimpleTable Style="overflow-x: auto;">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Voucher</th>
+                <th>Description</th>
+                <th>Debit</th>
+                <th>Credit</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (TransactionLines != null)
+            {
+                @foreach (TransactionLine transactionLine in TransactionLines)
+                {
+                    <tr>
+                        <td>@transactionLine.Transaction.DateTime</td>
+                        <td>@transactionLine.Transaction.VoucherNumber</td>
+                        <td>@transactionLine.Description</td>
+                        <td>@transactionLine.Debit</td>
+                        <td>@transactionLine.Credit</td>
+                    </tr>
+                }   
+            }
+        </tbody>
+    </MudSimpleTable>
+</MudPaper>
+
+@code {
+    public List<Account> Accounts { get; set; }
+    private Account _account;
+    public Account Account {
+        get
+        {
+            return _account;
+        }
+        set
+        {
+            ShowReport();
+            _account = value;
+        } 
+    }
+    public List<Transaction> Transactions { get; set; } = new List<Transaction>();
+    public List<TransactionLine> TransactionLines { get; set; } = new List<TransactionLine>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Accounts = await AccountService.GetAll();
+        StateHasChanged();
+    }
+
+    public async void ShowReport()
+    {
+        Transactions = await TransactionService.GetAll();
+        foreach (var transaction in Transactions)
+        {
+            TransactionLines.AddRange(transaction.TransactionLines);
+        }
+
+        TransactionLines = TransactionLines.Where(tl => tl.AccountId == Account.Id).ToList();
+
+        StateHasChanged();
+    }
+}

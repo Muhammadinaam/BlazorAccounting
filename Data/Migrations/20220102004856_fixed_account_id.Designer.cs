@@ -4,6 +4,7 @@ using BlazorAccounting.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BlazorAccounting.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20220102004856_fixed_account_id")]
+    partial class fixed_account_id
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -51,7 +53,7 @@ namespace BlazorAccounting.Data.Migrations
                     b.HasIndex("UserId", "Code")
                         .IsUnique();
 
-                    b.ToTable("Accounts", (string)null);
+                    b.ToTable("Accounts");
                 });
 
             modelBuilder.Entity("BlazorAccounting.Data.ApplicationUser", b =>
@@ -144,7 +146,7 @@ namespace BlazorAccounting.Data.Migrations
                     b.HasIndex("UserId", "VoucherNumber")
                         .IsUnique();
 
-                    b.ToTable("Transactions", (string)null);
+                    b.ToTable("Transactions");
                 });
 
             modelBuilder.Entity("BlazorAccounting.Data.TransactionLine", b =>
@@ -168,8 +170,12 @@ namespace BlazorAccounting.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("TransactionId")
+                    b.Property<int?>("TransactionId")
                         .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
 
@@ -177,7 +183,9 @@ namespace BlazorAccounting.Data.Migrations
 
                     b.HasIndex("TransactionId");
 
-                    b.ToTable("TransactionLines", (string)null);
+                    b.HasIndex("UserId");
+
+                    b.ToTable("TransactionLines");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -347,15 +355,19 @@ namespace BlazorAccounting.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("BlazorAccounting.Data.Transaction", "Transaction")
+                    b.HasOne("BlazorAccounting.Data.Transaction", null)
                         .WithMany("TransactionLines")
-                        .HasForeignKey("TransactionId")
+                        .HasForeignKey("TransactionId");
+
+                    b.HasOne("BlazorAccounting.Data.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Account");
 
-                    b.Navigation("Transaction");
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

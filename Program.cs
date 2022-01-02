@@ -26,9 +26,14 @@ builder.Services.AddMudServices(config =>
 {
     config.SnackbarConfiguration.PositionClass = Defaults.Classes.Position.BottomCenter;
 });
+
 builder.Services.AddScoped<IGenericRepository<Account>, GenericRepository<Account>>();
 builder.Services.AddScoped<EntityServiceBase<Account>>();
 builder.Services.AddScoped<AccountService>();
+
+builder.Services.AddScoped<IGenericRepository<Transaction>, GenericRepository<Transaction>>();
+builder.Services.AddScoped<EntityServiceBase<Transaction>>();
+builder.Services.AddScoped<TransactionService>();
 
 var app = builder.Build();
 

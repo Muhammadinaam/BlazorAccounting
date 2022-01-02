@@ -1,0 +1,75 @@
+﻿@page "/trial-balance"
+
+@using BlazorAccounting.Data
+@inject TransactionService TransactionService
+@inject AccountService AccountService
+
+@attribute [Authorize]
+
+<PageTitle>Trial Balance</PageTitle>
+
+<h1>Trial Balance</h1>
+
+<MudPaper Class="pa-3">
+    <MudSimpleTable Style="overflow-x: auto;">
+        <thead>
+            <tr>
+                <th>Account</th>
+                <th>Account Type</th>
+                <th>Debit</th>
+                <th>Credit</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (ReportLines != null)
+            {
+                @foreach (var reportLine in ReportLines)
+                {
+                    <tr>
+                        <td>@reportLine.Account.Name</td>
+                        <th>@reportLine.Account.AccountType</th>
+                        <td>@reportLine.Debit</td>
+                        <td>@reportLine.Credit</td>
+                    </tr>
+                }
+            <tr style="background-color: lightgray;">
+                <td style="font-weight: bold;">Total</td>
+                <td></td>
+                <td style="font-weight: bold;">@ReportLines.Sum(r => r.Debit)</td>
+                <td style="font-weight: bold;">@ReportLines.Sum(r => r.Credit)</td>
+            </tr>
+            }
+        </tbody>
+    </MudSimpleTable>
+</MudPaper>
+
+@code {
+
+    public class Report
+    {
+        public Account Account { get; set; }
+        public decimal Debit { get; set; }
+        public decimal Credit { get; set; }
+    }
+
+    public List<Transaction> Transactions { get; set; }
+    public List<TransactionLine> TransactionLines { get; set; } = new List<TransactionLine>();
+    public List<Report> ReportLines { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Transactions = await TransactionService.GetAll();
+        foreach (var transaction in Transactions)
+        {
+            TransactionLines.AddRange(transaction.TransactionLines);
+        }
+        ReportLines = TransactionLines.GroupBy(tl => tl.Account)
+            .Select(tl => new Report
+            {
+                Account = tl.Key,
+                Debit = tl.Sum(tl => tl.Debit),
+                Credit = tl.Sum(tl => tl.Credit)
+            }).ToList();
+        StateHasChanged();
+    }
+}

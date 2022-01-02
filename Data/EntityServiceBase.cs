@@ -19,6 +19,16 @@ namespace BlazorAccounting.Data
             _dbContext = dbContext;
         }
 
+        public Task<List<T>> GetAll()
+        {
+            return repository.GetAll();
+        }
+
+        public async Task<int> Count()
+        {
+            return await repository.CountAsync();
+        }
+
         public ValueTask<T?> GetByIDAsync(int id)
         {
             return repository.GetByIDAsync(id);
@@ -61,7 +71,7 @@ namespace BlazorAccounting.Data
             return userId;
         }
 
-        public async ValueTask<EntityEntry<T>> InsertAsync(T t)
+        public virtual async ValueTask<EntityEntry<T>> InsertAsync(T t)
         {
             await SetCurrentUser(t);
 
@@ -81,13 +91,13 @@ namespace BlazorAccounting.Data
             return repository.SaveChangesAsync();
         }
 
-        public async void Update(T t)
+        public virtual async void Update(T t)
         {
             await SetCurrentUser(t);
             repository?.Update(t);
         }
 
-        public async Task<int> DeleteAsync(int id)
+        public virtual async Task<int> DeleteAsync(int id)
         {
             return await repository?.DeleteAsync(id);
         }

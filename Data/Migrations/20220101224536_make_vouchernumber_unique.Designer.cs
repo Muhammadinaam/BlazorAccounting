@@ -4,6 +4,7 @@ using BlazorAccounting.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BlazorAccounting.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20220101224536_make_vouchernumber_unique")]
+    partial class make_vouchernumber_unique
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -51,7 +53,7 @@ namespace BlazorAccounting.Data.Migrations
                     b.HasIndex("UserId", "Code")
                         .IsUnique();
 
-                    b.ToTable("Accounts", (string)null);
+                    b.ToTable("Accounts");
                 });
 
             modelBuilder.Entity("BlazorAccounting.Data.ApplicationUser", b =>
@@ -144,7 +146,7 @@ namespace BlazorAccounting.Data.Migrations
                     b.HasIndex("UserId", "VoucherNumber")
                         .IsUnique();
 
-                    b.ToTable("Transactions", (string)null);
+                    b.ToTable("Transactions");
                 });
 
             modelBuilder.Entity("BlazorAccounting.Data.TransactionLine", b =>
@@ -155,29 +157,36 @@ namespace BlazorAccounting.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
-                    b.Property<int>("AccountId")
+                    b.Property<string>("AccountId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("AccountId1")
                         .HasColumnType("int");
 
-                    b.Property<decimal>("Credit")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("Debit")
+                    b.Property<decimal>("Amount")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("TransactionId")
+                    b.Property<int?>("TransactionId")
                         .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AccountId");
+                    b.HasIndex("AccountId1");
 
                     b.HasIndex("TransactionId");
 
-                    b.ToTable("TransactionLines", (string)null);
+                    b.HasIndex("UserId");
+
+                    b.ToTable("TransactionLines");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -343,19 +352,23 @@ namespace BlazorAccounting.Data.Migrations
                 {
                     b.HasOne("BlazorAccounting.Data.Account", "Account")
                         .WithMany()
-                        .HasForeignKey("AccountId")
+                        .HasForeignKey("AccountId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("BlazorAccounting.Data.Transaction", "Transaction")
-                        .WithMany("TransactionLines")
-                        .HasForeignKey("TransactionId")
+                    b.HasOne("BlazorAccounting.Data.Transaction", null)
+                        .WithMany("TransactionLine")
+                        .HasForeignKey("TransactionId");
+
+                    b.HasOne("BlazorAccounting.Data.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Account");
 
-                    b.Navigation("Transaction");
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -416,7 +429,7 @@ namespace BlazorAccounting.Data.Migrations
 
             modelBuilder.Entity("BlazorAccounting.Data.Transaction", b =>
                 {
-                    b.Navigation("TransactionLines");
+                    b.Navigation("TransactionLine");
                 });
 #pragma warning restore 612, 618
         }

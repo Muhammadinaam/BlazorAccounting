@@ -1,0 +1,177 @@
+﻿@page "/transaction/{id?}"
+@using BlazorAccounting.Data
+@using Microsoft.AspNetCore.Identity;
+@inject TransactionService TransactionService
+@inject AccountService AccountService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.EntityFrameworkCore
+
+@attribute [Authorize]
+
+<PageTitle>Transaction</PageTitle>
+
+<h1>Transaction</h1>
+
+<MudPaper Class="pa-3">
+    <EditForm Model="@transaction" OnValidSubmit="@HandleValidSubmit">
+        <ObjectGraphDataAnnotationsValidator />
+        <ValidationSummary />
+        <CustomValidation Errors="@Errors" />
+
+        <lable>Date</lable>
+        <br />
+        <InputDate @bind-Value="transaction.DateTime" />
+        <MudTextField Label="Voucher Number" Validation="@(RequiredFieldValidation)" @bind-Value="transaction.VoucherNumber" />
+    
+        <h3 style="margin-top: 30px">Transaction Lines</h3>
+        <MudTable Items="transaction.TransactionLines" Hover="true" Breakpoint="Breakpoint.Sm" >
+            <HeaderContent>
+                <MudTh>Account</MudTh>
+                <MudTh>Description</MudTh>
+                <MudTh>Debit</MudTh>
+                <MudTh>Credit</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate Context="nestedContext">
+                @if (accounts != null && accounts.Count > 0) {
+                    <MudTd DataLabel="Account">
+                        <MudSelect @bind-Value="nestedContext.AccountId" >
+                            @if (accounts != null)
+                            {
+                            @foreach (Account account in accounts)
+                                {
+                                <MudSelectItem Value="@account.Id">@account.Name</MudSelectItem>
+                                }
+                            }
+                    </MudSelect>
+                    </MudTd>
+                        <MudTd DataLabel="Description">
+                            <MudTextField @bind-Value="nestedContext.Description" />
+                        </MudTd>
+                        <MudTd DataLabel="Debit">
+                            <MudNumericField @bind-Value="nestedContext.Debit" />
+                        </MudTd>
+                        <MudTd DataLabel="Credit">
+                            <MudNumericField @bind-Value="nestedContext.Credit" />
+                        </MudTd>
+                        <MudTd>
+                            <MudButton OnClick="@(e => DeleteLine(nestedContext))" ButtonType="ButtonType.Button" StartIcon="@Icons.Material.Outlined.Delete" Variant="Variant.Filled" Color="Color.Error">
+                            Delete
+                        </MudButton>
+                    </MudTd>
+                }
+            </RowTemplate>
+            <FooterContent>
+                <MudTd>
+                
+                </MudTd>
+                <MudTd style="font-weight: bold">
+                    Total
+                </MudTd>
+                <MudTd style="font-weight: bold">
+                    @transaction.TransactionLines.Sum(t => t.Debit)
+                </MudTd>
+                <MudTd style="font-weight: bold">
+                    @transaction.TransactionLines.Sum(t => t.Credit)
+                </MudTd>
+            </FooterContent>
+        </MudTable>
+        @if (accounts != null && accounts.Count > 0)
+        {
+            <MudButton OnClick="AddNewLine" Class="mt-2" ButtonType="ButtonType.Button" StartIcon="@Icons.Material.Outlined.AddCircle" Variant="Variant.Filled" Color="Color.Info">
+                Add Line
+            </MudButton>
+        } else
+        {
+            <h2 style="text-align: center; margin: 20px; color: red;">No accounts found. Please add Accounts first</h2>
+        }
+        <br /><br />
+        <hr />
+    
+
+        <MudButton Class="mt-2" ButtonType="ButtonType.Submit" StartIcon="@Icons.Material.Filled.Save" Variant="Variant.Filled" Color="Color.Primary">
+            Save
+        </MudButton>
+
+    </EditForm>
+</MudPaper>
+
+@code {
+
+    [Parameter]
+    public string id { get; set; }
+    private Transaction transaction = new(){ DateTime = DateTime.Now, VoucherNumber = DateTime.Now.ToString() };
+    private RequiredAttribute RequiredFieldValidation = new RequiredAttribute() { ErrorMessage = "This field is required" };
+    private string[]? Errors { get; set; }
+    public List<Account> accounts { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!String.IsNullOrEmpty(id))
+        {
+            transaction = await TransactionService.GetByIDAsync( int.Parse(id) );
+        }
+        accounts = await AccountService.GetAll();
+        StateHasChanged();
+    }
+
+    protected void AddNewLine()
+    {
+        transaction.TransactionLines.Add(new TransactionLine());
+    }
+
+    protected void DeleteLine(TransactionLine transactionLine)
+    {
+        transaction.TransactionLines.Remove(transactionLine);
+    }
+
+    private async void HandleValidSubmit()
+    {
+        Errors = null;
+        try
+        {
+            if (!String.IsNullOrEmpty(id))
+            {
+                TransactionService.Update(transaction);
+            }
+            else
+            {
+                await TransactionService.InsertAsync(transaction);
+            }
+
+            await TransactionService.SaveChangesAsync();
+            Snackbar.Add("Saved successfully", Severity.Success);
+            NavigationManager.NavigateTo("/transactions");
+        }
+        catch (DbUpdateException ex)
+        {
+            if (ex.InnerException.Message.Contains("duplicate"))
+            {
+                Errors = new string[] { "Voucher Number is already taken." };
+                StateHasChanged();
+            }
+            else
+            {
+                Errors = new string[] { "Data validation failed" };
+                StateHasChanged();
+            }
+        }
+        catch (DebitCreditNotEqualException)
+        {
+            Errors = new string[] { "Debit Credit not equal" };
+            StateHasChanged();
+        }
+        catch (EmptyException)
+        {
+            Errors = new string[] { "Please add transaction lines" };
+            StateHasChanged();
+        }
+        catch (Exception)
+        {
+            Errors = new string[] { "Server error occurred. Please contact support" };
+            StateHasChanged();
+        }
+    }
+}

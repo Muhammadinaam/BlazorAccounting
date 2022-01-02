@@ -1,9 +1,59 @@
 ﻿@page "/"
 
+@using BlazorAccounting.Data
+@inject AccountService AccountService
+@inject TransactionService TransactionService
+@inject NavigationManager NavigationManager
+
 <PageTitle>Dashboard</PageTitle>
 
-<h3>Dashboard</h3>
+<h1>Dashboard</h1>
+
+<br />
+
+<MudGrid>
+    <MudItem md="6">
+        <MudCard>
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">Accounts [@AccountsCount]</MudText>
+                </CardHeaderContent>
+                
+            </MudCardHeader>
+            <MudCardContent>
+                <MudText>Account heads help you classify different type of transactions</MudText>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton OnClick=@(e => NavigationManager.NavigateTo("accounts")) Variant="Variant.Text" Color="Color.Primary">Details</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+    <MudItem md="6">
+        <MudCard>
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">Transactions  [@TransactionsCount]</MudText>
+                </CardHeaderContent>
+                
+            </MudCardHeader>
+            <MudCardContent>
+                <MudText>Your day to day transactions</MudText>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton OnClick=@(e => NavigationManager.NavigateTo("transactions")) Variant="Variant.Text" Color="Color.Primary">Details</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+</MudGrid>
 
 @code {
 
+    public int AccountsCount { get; set; }
+    public int TransactionsCount { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        AccountsCount = await AccountService.Count();
+        TransactionsCount = await TransactionService.Count();
+    }
 }
