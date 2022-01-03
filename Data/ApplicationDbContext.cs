@@ -42,7 +42,11 @@ namespace BlazorAccounting.Data
 
         public string? GetUserId()
         {
-            return Users.FirstOrDefault(u => u.UserName.ToLower() == GetUserName().ToLower())?.Id;
+            if (GetUserName() != null)
+            {
+                return Users.FirstOrDefault(u => u.UserName.ToLower() == GetUserName().ToLower())?.Id;
+            }
+            return null;
         }
 
         public DbSet<Account> Accounts { get; set; }

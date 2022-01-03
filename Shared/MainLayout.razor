@@ -1,6 +1,7 @@
 ﻿@using BlazorAccounting.Data
 @inherits LayoutComponentBase
 @inject ApplicationDbContext dbContext
+@inject NavigationManager NavigationManager
 
 <PageTitle>Blazor Accounting</PageTitle>
 
@@ -34,5 +35,15 @@
     void DrawerToggle()
     {
         _drawerOpen = !_drawerOpen;
+    }
+
+    protected async override Task OnInitializedAsync()
+    {
+        base.OnInitialized();
+        var user = (await authenticationStateTask).User;
+        if(!user.Identity.IsAuthenticated)
+        {
+            NavigationManager.NavigateTo("Identity/Account/Login");
+        }
     }
 }
